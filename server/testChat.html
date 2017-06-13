@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Title</title>
+        <meta charset="UTF-8">
+    </head>
+<body>
+
+<h1>My First Heading</h1>
+<p>My first paragraph.</p>
+
+<script src="../bower_components/Oda/dist/Oda.js?dev=true"></script>
+
+<script>
+
+var conn = $.Oda.Websocket.connect({
+    host:"localhost",
+    port:4242,
+    instance:"kureha"
+});
+
+conn.onConnect = function(e) { 
+    console.log("kureha Connection success.");
+ }
+
+conn.onMessage = function(e) { 
+    console.log("kureha Message reçu",  e.data);
+};
+
+</script>
+
+</body>
+</html>

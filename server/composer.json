@@ -13,6 +13,6 @@
         "happykiller/oda": "@dev"
     },
         "autoload": {
-        "psr-4": { "KUREHA\\": "class" }
+        "psr-4": { "Kureha\\": "class" }
     }
 }
