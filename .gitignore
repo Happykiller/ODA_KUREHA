@@ -1,22 +1,23 @@
-# Compiled class file
-*.class
-
-# Log file
+config/
+config/*
+config/config.js
+libs/
+libs/*
+bower_components/
+bower_components/*
+node_modules/
+node_modules/*
+.idea/
+.idea/*
+server/composer.lock
+server/config/
+server/config/*
+server/config/config.php
+server/vendor/
+server/vendor/*
+server/resources/
+server/resources/*
+*.iml
+.vscode/
+debug.log
 *.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
-*.jar
-*.war
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*

@@ -1,0 +1,17 @@
+{
+	"name": "KUREHA",
+	"version": "0.0.1",
+	"homepage": "KUREHA",
+	"authors": ["Fabrice Rosito <fabrice.rosito@gmail.com>"],
+	"description": "KUREHA",
+	"keywords": ["keywork"],
+	"license": "MIT",
+	"private": true,
+	"ignore": [
+		"**/.*",
+		"node_modules"
+	],
+	"dependencies": {
+	  "Oda" : "*"
+	}
+}

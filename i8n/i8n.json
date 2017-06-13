@@ -1,0 +1,13 @@
+[
+    {
+        "groupName" : "home"
+        , "fr" : {
+            "title" : "Accueil",
+            "hello" : "Bonjour avec le FrameWork Oda"
+        }
+        , "en" : {
+            "title" : "Home",
+            "hello" : "Hello with Oda FrameWork"
+        }
+    }
+]
