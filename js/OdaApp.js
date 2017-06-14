@@ -29,6 +29,10 @@
     $.Oda.App = {
         /* Version number */
         version: VERSION,
+        Websocket:null,
+        WebsocketMessageType:{
+            NEW_CONNECTION: "NEW_CONNECTION"
+        },
         
         /**
          * @returns {$.Oda.App}
@@ -36,23 +40,48 @@
         startApp: function () {
             try {
                 $.Oda.Router.addRoute("home", {
-                    "path" : "partials/home.html",
-                    "title" : "home.title",
-                    "urls" : ["","home"],
-                    "middleWares":["support","auth"]
+                    path: "partials/home.html",
+                    title: "home.title",
+                    urls: ["","home"],
+                    middleWares:["support","auth"]
                 });
 
                 $.Oda.Router.startRooter();
 
+                $.Oda.App.Websocket = $.Oda.Websocket.connect({
+                    host:"localhost",
+                    port:4242,
+                    instance:"kureha"
+                });
+
+                $.Oda.App.Websocket.onConnect = function(e) { 
+                    $.Oda.App.Websocket.send({
+                        messageType: $.Oda.App.WebsocketMessageType.NEW_CONNECTION,
+                        userCode: $.Oda.Session.code_user,
+                        userId: $.Oda.Session.id
+                    });
+                };
+
+                $.Oda.App.Websocket.onMessage = function(e) { 
+                    $.Oda.Log.trace("New message => type:" + e.data.messageType + ", from:" + e.data.userCode);
+                    switch(e.data.messageType) {
+                        case $.Oda.App.WebsocketMessageType.NEW_CONNECTION:
+                            $.Oda.Display.Notification.info("Nouvelle connection de : " + e.data.userCode);
+                            break;
+                        default:
+                            ;
+                    }
+                };
+
                 return this;
             } catch (er) {
-                $.Oda.Log.error("$.Oda.App.startApp : " + er.message);
+                $.Oda.Log.error("$.Oda.App.startApp: " + er.message);
                 return null;
             }
         },
 
-        "Controller" : {
-            "Home": {
+        Controller: {
+            Home: {
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
@@ -60,7 +89,7 @@
                     try {
                         return this;
                     } catch (er) {
-                        $.Oda.Log.error("$.Oda.App.Controller.Home.start : " + er.message);
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.start: " + er.message);
                         return null;
                     }
                 }

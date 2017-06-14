@@ -1,0 +1,22 @@
+{
+  "name": "Kureha",
+  "version": "0.1.170614",
+  "description": "Sandbox",
+  "main": "gulpfile.js",
+  "author": "Fabrice Rosito <fabrice.rosito@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "gulp": "*",
+    "jshint": "*",
+    "gulp-jshint": "*",
+    "gulp-plumber": "*",
+    "gulp-uglify": "*",
+    "gulp-rename": "*",
+    "jshint-stylish": "*", 
+    "gulp-load-plugins": "*",
+    "browser-sync": "*",
+    "gulp-minify-css": "*",
+    "gulp-autoprefixer": "^3.1.0",
+    "gulp-sass": "^2.1.0"
+  }
+}
