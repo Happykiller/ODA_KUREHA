@@ -21,20 +21,36 @@ use \stdClass,
  */
 
 class KurehaWebsockets extends OdaWebsockets {
+
+    function __construct() {
+        parent::__construct();
+        $this->debug=true;
+    }
+
     public function onOpenPublic(ConnectionInterface $conn) {
-        OdaLib::traceLog("New Kureha connection! ({$conn->resourceId})");
     }
 
     public function onMessagePublic(ConnectionInterface $from, $msg) {
+        $jsonStr = str_replace("odaTagJson:", "", $msg);
+        $json = json_decode($jsonStr);
+        if($json->{'messageType'} === 'NEW_CONNECTION'){
+            $from->userCode = $json->{'userCode'};
+            $from->userId = $json->{'userId'};
+        }
         $numRecv = count($this->clients) - 1;
-        OdaLib::traceLog(sprintf('Connection Kureha %d sending message "%s" to %d other connection%s', $from->resourceId, $msg, $numRecv, $numRecv == 1 ? '' : 's'));
     }
 
     public function onClosePublic(ConnectionInterface $conn) {
-        OdaLib::traceLog("Connection Kureha {$conn->resourceId} has disconnected");
+        $str = 'odaTagJson:{"messageType":"CLOSE_CONNECTION","userCode":"'.$conn->userCode.'","userId":"'.$conn->userId.'"}';
+        foreach ($this->clients as $client) {
+            if ($conn !== $client) {
+                OdaLib::traceLog($str);
+                // The sender is not the receiver, send to each client connected
+                $client->send($str);
+            }
+        }
     }
 
     public function onErrorPublic(ConnectionInterface $conn, Exception $e) {
-        OdaLib::traceLog("An error has occurred: id={$conn->resourceId}, {$e->getMessage()}");
     }
 }
