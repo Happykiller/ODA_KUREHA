@@ -1,13 +1,24 @@
 [
     {
-        "groupName" : "home"
-        , "fr" : {
-            "title" : "Accueil",
-            "hello" : "Bonjour avec le FrameWork Oda"
+        "groupName": "home",
+        "fr": {
+            "title": "Accueil",
+            "hello": "Bonjour avec le FrameWork Oda"
+        },
+        "en": {
+            "title": "Home",
+            "hello": "Hello with Oda FrameWork"
         }
-        , "en" : {
-            "title" : "Home",
-            "hello" : "Hello with Oda FrameWork"
+    },{
+        "groupName": "chat",
+        "fr":{
+            "message":"Ecrivez votre message :",
+            "tips": "Astuce",
+            "placeholder": "Votre message",
+            "advice": "Vos messages sont ouverts"
+        },
+        "en":{
+
         }
     }
 ]

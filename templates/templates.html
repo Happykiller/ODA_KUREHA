@@ -1,0 +1,38 @@
+<script id="kureha-chat-sent" type="text/template">
+<div class="row msg_container base_sent">
+    <div class="col-md-10">
+        <div class="messages msg_sent">
+            <p><pre>{{message}}</pre></p>
+            <time datetime="2009-11-13T20:00">Me • 51 min</time>
+        </div>
+    </div>
+    <div class="col-md-2 avatar">
+        <img src="{{urlAvatar}}" class="img-responsive">
+    </div>
+</div>
+</script>
+
+<script id="kureha-chat-receive" type="text/template">
+<div class="row msg_container base_receive">
+    <div class="col-md-2 avatar" style="text-align:right">
+        <img src="{{urlAvatar}}" class="img-responsive">
+    </div>
+    <div class="col-md-10">
+        <div class="messages msg_receive">
+            <p><pre>{{message}}</pre></p>
+            <time datetime="2009-11-13T20:00">{{userCode}} • 51 min</time>
+        </div>
+    </div>
+</div>
+</script>
+
+<script id="kureha-chat-notif" type="text/template">
+<div class="row msg_container">
+    <div class="col-md-12">
+        <div class="notif">
+            <p>{{message}}</p>
+            <time datetime="2009-11-13T20:00">{{userCode}} • 51 min</time>
+        </div>
+    </div>
+</div>
+</script>
