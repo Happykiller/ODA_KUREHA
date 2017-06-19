@@ -127,7 +127,7 @@
                 };
 
                 $.Oda.App.Websocket.onMessage = function(e) { 
-                    $.Oda.Log.trace("New message => type:" + e.data.messageType + ", from:" + e.data.userCode);
+                    $.Oda.Log.debug("New message => type:" + e.data.messageType + ", from:" + e.data.userCode);
                     switch(e.data.messageType) {
                         case $.Oda.App.WebsocketMessageType.NEW_CONNECTION:
                             $("#chat").append('<kureha-chat-notificaiton message="New user: '+e.data.userCode+'" userCode="'+e.data.userCode+'"></kureha-chat-notificaiton>');
