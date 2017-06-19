@@ -29,7 +29,7 @@
                 ]}
             ];
             $.Oda.Loader.load({ depends: listDepends, functionFeedback: function(data){
-                $.Oda.Log.trace("depends loading success.");
+                $.Oda.Log.debug("depends loading success.");
                 $.Oda.App.startApp();
             }});
         }});
