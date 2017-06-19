@@ -116,34 +116,6 @@
 
                 $.Oda.Router.startRooter();
 
-                $.Oda.App.Websocket = $.Oda.Websocket.connect($.Oda.Context.Websocket);
-
-                $.Oda.App.Websocket.onConnect = function(e) { 
-                    $.Oda.App.Websocket.send({
-                        messageType: $.Oda.App.WebsocketMessageType.NEW_CONNECTION,
-                        userCode: $.Oda.Session.code_user,
-                        userId: $.Oda.Session.id
-                    });
-                };
-
-                $.Oda.App.Websocket.onMessage = function(e) { 
-                    $.Oda.Log.debug("New message => type:" + e.data.messageType + ", from:" + e.data.userCode);
-                    switch(e.data.messageType) {
-                        case $.Oda.App.WebsocketMessageType.NEW_CONNECTION:
-                            $("#chat").append('<kureha-chat-notificaiton message="New user: '+e.data.userCode+'" userCode="'+e.data.userCode+'"></kureha-chat-notificaiton>');
-                            break;
-                        case $.Oda.App.WebsocketMessageType.CLOSE_CONNECTION:
-                            $("#chat").append('<kureha-chat-notificaiton message="User left: '+e.data.userCode+'" userCode="'+e.data.userCode+'"></kureha-chat-notificaiton>');
-                            break;
-                        case $.Oda.App.WebsocketMessageType.NEW_MESSAGE:
-                            $("#chat").append('<kureha-chat-receive message="'+e.data.message+'" userCode="'+e.data.userCode+'"></kureha-chat-receive>');
-                            break;
-                        default:
-                            ;
-                    }
-                    $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                };
-
                 return this;
             } catch (er) {
                 $.Oda.Log.error("$.Oda.App.startApp: " + er.message);
@@ -158,6 +130,34 @@
                  */
                 start: function () {
                     try {
+                        $.Oda.App.Websocket = $.Oda.Websocket.connect($.Oda.Context.Websocket);
+
+                        $.Oda.App.Websocket.onConnect = function(e) { 
+                            $.Oda.App.Websocket.send({
+                                messageType: $.Oda.App.WebsocketMessageType.NEW_CONNECTION,
+                                userCode: $.Oda.Session.code_user,
+                                userId: $.Oda.Session.id
+                            });
+                        };
+
+                        $.Oda.App.Websocket.onMessage = function(e) { 
+                            $.Oda.Log.debug("New message => type:" + e.data.messageType + ", from:" + e.data.userCode);
+                            switch(e.data.messageType) {
+                                case $.Oda.App.WebsocketMessageType.NEW_CONNECTION:
+                                    $("#chat").append('<kureha-chat-notificaiton message="New user: '+e.data.userCode+'" userCode="'+e.data.userCode+'"></kureha-chat-notificaiton>');
+                                    break;
+                                case $.Oda.App.WebsocketMessageType.CLOSE_CONNECTION:
+                                    $("#chat").append('<kureha-chat-notificaiton message="User left: '+e.data.userCode+'" userCode="'+e.data.userCode+'"></kureha-chat-notificaiton>');
+                                    break;
+                                case $.Oda.App.WebsocketMessageType.NEW_MESSAGE:
+                                    $("#chat").append('<kureha-chat-receive message="'+e.data.message+'" userCode="'+e.data.userCode+'"></kureha-chat-receive>');
+                                    break;
+                                default:
+                                    ;
+                            }
+                            $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                        };
+
                         $.Oda.Scope.Gardian.add({
                             id : "gardianMessage",
                             listElt : ["message"],
