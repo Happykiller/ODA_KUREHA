@@ -5,6 +5,31 @@
         <div class="col-md-12">
             <oda-label oda-label-value="home.hello"/>
         </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Réception</h2>
+            <video controls id="receiver-video" width="100%" height="400px"></video>
+            <oda-btn oda-btn-name="start" oda-btn-style="primary" oda-btn-icon-before="ok" oda-btn-click="$.Oda.App.Controller.Home.startVideo();">Démarrer</oda-btn>
+            <oda-input-area
+                oda-input-area-name="offer"
+                oda-input-area-label="offer"
+                />
+        </div>
+        <div class="col-md-6">
+            <h2>Emission</h2>
+            <video controls id="emitter-video" width="100%" height="400px"></video>
+            <oda-btn oda-btn-name="receive" oda-btn-style="primary" oda-btn-icon-before="ok" oda-btn-click="$.Oda.App.Controller.Home.receiveVideo();">Recevoir</oda-btn>
+            <oda-input-area
+                oda-input-area-name="incoming"
+                oda-input-area-label="incoming"
+                />
+            <oda-btn oda-btn-name="recOffer" oda-btn-style="primary" oda-btn-icon-before="ok" oda-btn-click="$.Oda.App.Controller.Home.recOffer();">Enregistre offre</oda-btn>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-md-12">
             <div class="panel-body msg_container_base" id="chat">
                 <kureha-chat-notificaiton message="New user: moi" userCode="SYSTEM"/>

@@ -125,11 +125,18 @@
 
         Controller: {
             Home: {
+                peer: null,
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
                 start: function () {
                     try {
+                        navigator.getUserMedia = ( navigator.getUserMedia ||
+                            navigator.webkitGetUserMedia ||
+                            navigator.mozGetUserMedia ||
+                            navigator.msGetUserMedia)
+                        ;
+
                         $.Oda.App.Websocket = $.Oda.Websocket.connect($.Oda.Context.Websocket);
 
                         $.Oda.App.Websocket.onConnect = function(e) { 
@@ -193,6 +200,94 @@
                         return this;
                     } catch (er) {
                         $.Oda.Log.error("$.Oda.App.Controller.Home.sent: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                startPeer: function (initiator) {
+                    try {
+                        navigator.getUserMedia({
+                            video: true,
+                            audio: { facingMode: "user" }
+                        }, function(stream){
+                            $.Oda.App.Controller.Home.peer = new SimplePeer({
+                                initiator:initiator,
+                                stream: stream,
+                                trickle: false
+                            })
+                            $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peer);
+                            var video = document.querySelector('#emitter-video')
+                            video.src = window.URL.createObjectURL(stream)
+                            video.play()
+                        }, function(){
+
+                        });
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.startPeer: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                startVideo: function () {
+                    try {
+                        $.Oda.App.Controller.Home.startPeer(true);
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.startVideo: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                receiveVideo: function () {
+                    try {
+                        $.Oda.App.Controller.Home.startPeer(false);
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.receiveVideo: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                bindEvents: function (p) {
+                    try {
+                        p.on('error', function(data){
+                            console.log('error', data);
+                        });
+
+                        p.on('signal', function(data){
+                            $('#offer').val(JSON.stringify(data));
+                        });
+
+                        p.on('stream', function(stream){
+                            var video = document.querySelector('#receiver-video')
+                            video.src = window.URL.createObjectURL(stream)
+                            video.play()
+                        });
+
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.bindEvents: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                recOffer: function () {
+                    try {
+                        $.Oda.App.Controller.Home.peer.signal(JSON.parse($('#incoming').val()))
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.recOffer: " + er.message);
                         return null;
                     }
                 }
