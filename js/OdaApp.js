@@ -162,9 +162,11 @@
                                     $("#chat").append('<kureha-chat-receive message="'+e.data.message+'" userCode="'+e.data.userCode+'"></kureha-chat-receive>');
                                     break;
                                 case $.Oda.App.WebsocketMessageType.WEBRTC_OFFER:
+                                    //REC offer
                                     $.Oda.App.Controller.Home.peer.signal(e.data.offer);
                                     break;
                                 case $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER:
+                                    //REC answer
                                     $.Oda.App.Controller.Home.peer.signal(e.data.answer);
                                     break;
                                 default:
@@ -223,19 +225,21 @@
                             video: true,
                             audio: { facingMode: "user" }
                         }, function(stream){
+                            //Link stream to peer
+                            //If initiator send a signal local to get the offer
                             $.Oda.App.Controller.Home.peer = new SimplePeer({
-                                initiator:initiator,
+                                initiator: initiator,
                                 stream: stream,
                                 trickle: false
                             })
                             $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peer);
+
+                            //Display stream
                             var video = document.querySelector('#emitter-video');
                             video.srcObject = stream;
                             video.volume = 0;
                             video.play()
-                        }, function(){
-
-                        });
+                        }, function(){});
                         return this;
                     } catch (er) {
                         $.Oda.Log.error("$.Oda.App.Controller.Home.startPeer: " + er.message);
@@ -282,7 +286,6 @@
                         });
 
                         p.on('stream', function(stream){
-                            console.log('stream', stream);
                             var video = document.querySelector('#receiver-video');
                             video.srcObject = stream;
                             video.volume = 0;
