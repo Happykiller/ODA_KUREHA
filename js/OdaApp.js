@@ -43,7 +43,9 @@
         WebsocketMessageType:{
             NEW_CONNECTION: "NEW_CONNECTION",
             CLOSE_CONNECTION: "CLOSE_CONNECTION",
-            NEW_MESSAGE: "NEW_MESSAGE"
+            NEW_MESSAGE: "NEW_MESSAGE",
+            WEBRTC_OFFER: "WEBRTC_OFFER",
+            WEBRTC_ANSWER: "WEBRTC_ANSWER"
         },
         avatarId:0,
         
@@ -159,6 +161,12 @@
                                 case $.Oda.App.WebsocketMessageType.NEW_MESSAGE:
                                     $("#chat").append('<kureha-chat-receive message="'+e.data.message+'" userCode="'+e.data.userCode+'"></kureha-chat-receive>');
                                     break;
+                                case $.Oda.App.WebsocketMessageType.WEBRTC_OFFER:
+                                    $.Oda.App.Controller.Home.peer.signal(e.data.offer);
+                                    break;
+                                case $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER:
+                                    $.Oda.App.Controller.Home.peer.signal(e.data.answer);
+                                    break;
                                 default:
                                     ;
                             }
@@ -176,6 +184,9 @@
                                 }
                             }
                         });
+
+                        $.Oda.App.Controller.Home.startPeer(false);
+
                         return this;
                     } catch (er) {
                         $.Oda.Log.error("$.Oda.App.Controller.Home.start: " + er.message);
@@ -218,8 +229,9 @@
                                 trickle: false
                             })
                             $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peer);
-                            var video = document.querySelector('#emitter-video')
-                            video.src = window.URL.createObjectURL(stream)
+                            var video = document.querySelector('#emitter-video');
+                            video.srcObject = stream;
+                            video.volume = 0;
                             video.play()
                         }, function(){
 
@@ -245,18 +257,6 @@
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
-                receiveVideo: function () {
-                    try {
-                        $.Oda.App.Controller.Home.startPeer(false);
-                        return this;
-                    } catch (er) {
-                        $.Oda.Log.error("$.Oda.App.Controller.Home.receiveVideo: " + er.message);
-                        return null;
-                    }
-                },
-                /**
-                 * @returns {$.Oda.App.Controller.Home}
-                 */
                 bindEvents: function (p) {
                     try {
                         p.on('error', function(data){
@@ -264,30 +264,34 @@
                         });
 
                         p.on('signal', function(data){
-                            $('#offer').val(JSON.stringify(data));
+                            if(data.type === "offer"){
+                                $.Oda.App.Websocket.send({
+                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_OFFER,
+                                    userCode: $.Oda.Session.code_user,
+                                    userId: $.Oda.Session.id,
+                                    offer: data
+                                });
+                            } else if(data.type === "answer"){
+                                $.Oda.App.Websocket.send({
+                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER,
+                                    userCode: $.Oda.Session.code_user,
+                                    userId: $.Oda.Session.id,
+                                    answer: data
+                                });
+                            }
                         });
 
                         p.on('stream', function(stream){
-                            var video = document.querySelector('#receiver-video')
-                            video.src = window.URL.createObjectURL(stream)
-                            video.play()
+                            console.log('stream', stream);
+                            var video = document.querySelector('#receiver-video');
+                            video.srcObject = stream;
+                            video.volume = 0;
+                            video.play();
                         });
 
                         return this;
                     } catch (er) {
                         $.Oda.Log.error("$.Oda.App.Controller.Home.bindEvents: " + er.message);
-                        return null;
-                    }
-                },
-                /**
-                 * @returns {$.Oda.App.Controller.Home}
-                 */
-                recOffer: function () {
-                    try {
-                        $.Oda.App.Controller.Home.peer.signal(JSON.parse($('#incoming').val()))
-                        return this;
-                    } catch (er) {
-                        $.Oda.Log.error("$.Oda.App.Controller.Home.recOffer: " + er.message);
                         return null;
                     }
                 }
