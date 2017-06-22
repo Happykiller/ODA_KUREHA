@@ -127,7 +127,10 @@
 
         Controller: {
             Home: {
-                peer: null,
+                peerInitiator: null,
+                peerReceiver: null,
+                offer: null,
+                receiverId: 0,
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
@@ -162,12 +165,10 @@
                                     $("#chat").append('<kureha-chat-receive message="'+e.data.message+'" userCode="'+e.data.userCode+'"></kureha-chat-receive>');
                                     break;
                                 case $.Oda.App.WebsocketMessageType.WEBRTC_OFFER:
-                                    //REC offer
-                                    $.Oda.App.Controller.Home.peer.signal(e.data.offer);
+                                    $.Oda.App.Controller.Home.peerReceiver.signal(e.data.offer);
                                     break;
                                 case $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER:
-                                    //REC answer
-                                    $.Oda.App.Controller.Home.peer.signal(e.data.answer);
+                                    $.Oda.App.Controller.Home.peerInitiator.signal(e.data.answer);
                                     break;
                                 default:
                                     ;
@@ -187,7 +188,7 @@
                             }
                         });
 
-                        $.Oda.App.Controller.Home.startPeer(false);
+                        $.Oda.App.Controller.Home.startPeer();
 
                         return this;
                     } catch (er) {
@@ -219,26 +220,46 @@
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
-                startPeer: function (initiator) {
+                startPeer: function () {
                     try {
                         navigator.getUserMedia({
                             video: true,
                             audio: { facingMode: "user" }
                         }, function(stream){
-                            //Link stream to peer
-                            //If initiator send a signal local to get the offer
-                            $.Oda.App.Controller.Home.peer = new SimplePeer({
-                                initiator: initiator,
-                                stream: stream,
-                                trickle: false
-                            })
-                            $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peer);
-
-                            //Display stream
                             var video = document.querySelector('#emitter-video');
                             video.srcObject = stream;
                             video.volume = 0;
                             video.play()
+
+                            $.Oda.App.Controller.Home.peerInitiator = new SimplePeer({
+                                initiator: true,
+                                stream: stream,
+                                trickle: false
+                            })
+                            $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peerInitiator);
+                            $.Oda.App.Controller.Home.peerInitiator.on('signal', function(data){
+                                if(data.type === "offer"){
+                                    $.Oda.App.Controller.Home.offer = data;
+                                    $('#shareDiv').html('<oda-btn oda-btn-name="start" oda-btn-style="primary" oda-btn-icon-after="share-alt" oda-btn-click="$.Oda.App.Controller.Home.share();">Partager</oda-btn>');
+                                }
+                            });
+                            
+                            $.Oda.App.Controller.Home.peerReceiver = new SimplePeer({
+                                initiator: false,
+                                stream: stream,
+                                trickle: true
+                            })
+                            $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peerReceiver);
+                            $.Oda.App.Controller.Home.peerReceiver.on('signal', function(data){
+                                if(data.type === "answer"){
+                                    $.Oda.App.Websocket.send({
+                                        messageType: $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER,
+                                        userCode: $.Oda.Session.code_user,
+                                        userId: $.Oda.Session.id,
+                                        answer: data
+                                    });
+                                }
+                            });
                         }, function(){});
                         return this;
                     } catch (er) {
@@ -249,12 +270,17 @@
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
-                startVideo: function () {
+                share: function () {
                     try {
-                        $.Oda.App.Controller.Home.startPeer(true);
+                        $.Oda.App.Websocket.send({
+                            messageType: $.Oda.App.WebsocketMessageType.WEBRTC_OFFER,
+                            userCode: $.Oda.Session.code_user,
+                            userId: $.Oda.Session.id,
+                            offer: $.Oda.App.Controller.Home.offer
+                        });
                         return this;
                     } catch (er) {
-                        $.Oda.Log.error("$.Oda.App.Controller.Home.startVideo: " + er.message);
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.share: " + er.message);
                         return null;
                     }
                 },
@@ -264,29 +290,21 @@
                 bindEvents: function (p) {
                     try {
                         p.on('error', function(data){
-                            console.log('error', data);
+                            console.log('error peer', data);
                         });
-
-                        p.on('signal', function(data){
-                            if(data.type === "offer"){
-                                $.Oda.App.Websocket.send({
-                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_OFFER,
-                                    userCode: $.Oda.Session.code_user,
-                                    userId: $.Oda.Session.id,
-                                    offer: data
-                                });
-                            } else if(data.type === "answer"){
-                                $.Oda.App.Websocket.send({
-                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER,
-                                    userCode: $.Oda.Session.code_user,
-                                    userId: $.Oda.Session.id,
-                                    answer: data
-                                });
-                            }
-                        });
-
+                        
                         p.on('stream', function(stream){
-                            var video = document.querySelector('#receiver-video');
+                            $('#shareDiv').html('');
+                            $.Oda.App.Controller.Home.receiverId++;
+                            var strHtmlReceiver = $.Oda.Display.TemplateHtml.create({
+                                template: "tpl-receiver",
+                                scope: {
+                                    id: $.Oda.App.Controller.Home.receiverId,
+                                    userCode: "test"
+                                }
+                            });
+                            $('#receivers').append(strHtmlReceiver);
+                            var video = document.querySelector('#receiver-video-'+$.Oda.App.Controller.Home.receiverId);
                             video.srcObject = stream;
                             video.volume = 0;
                             video.play();
