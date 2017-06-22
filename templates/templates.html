@@ -2,8 +2,8 @@
 <div class="row msg_container base_sent">
     <div class="col-md-10">
         <div class="messages msg_sent">
-            <p><pre>{{message}}</pre></p>
-            <time datetime="2009-11-13T20:00">Me • 51 min</time>
+            <p>{{message}}</p>
+            <time>Me • {{time}} min</time>
         </div>
     </div>
     <div class="col-md-2 avatar">
@@ -19,20 +19,42 @@
     </div>
     <div class="col-md-10">
         <div class="messages msg_receive">
-            <p><pre>{{message}}</pre></p>
-            <time datetime="2009-11-13T20:00">{{userCode}} • 51 min</time>
+            <p>{{message}}</p>
+            <time>{{userCode}} • {{time}} min</time>
         </div>
     </div>
 </div>
 </script>
 
 <script id="kureha-chat-notif" type="text/template">
-<div class="row msg_container">
-    <div class="col-md-12">
-        <div class="notif">
+<div class="row msg_container base_receive">
+    <div class="col-md-2 avatar" style="text-align:right">
+        <img src="{{urlAvatar}}" class="img-responsive">
+    </div>
+    <div class="col-md-10">
+        <div class="notif msg_receive">
             <p>{{message}}</p>
-            <time datetime="2009-11-13T20:00">{{userCode}} • 51 min</time>
+            <time>{{userCode}} • {{time}} min</time>
         </div>
     </div>
+</div>
+</script>
+
+<script id="tpl-receiver" type="text/template">
+    <div class="col-md-3 well text-center" id="receiver-{{userCode}}">            
+        <h2>{{userCode}}</h2>          
+        <div id="div-receiver-video-{{id}}"><oda-loading/></div>
+    </div>
+</script>
+
+<script id="tpl-receiver-video" type="text/template">
+    <video controls id="receiver-video-{{id}}" width="100%" height="150px"></video>
+</script>
+
+<script id="tpl-present" type="text/template">
+<div style="display:inline-block;text-align:center;" id="present-{{userCode}}">
+    <img src="{{urlAvatar}}" class="img-responsive">
+    <p>{{userCode}}</p>
+    <div id="dialBt-{{userCode}}"><oda-btn oda-btn-name="start" oda-btn-style="primary" oda-btn-icon-before="earphone" oda-btn-click="$.Oda.App.Controller.Home.call({'userCode':'{{userCode}}'});">Appeler</oda-btn></div>
 </div>
 </script>

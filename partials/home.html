@@ -11,43 +11,35 @@
         <div class="col-md-6 col-md-offset-3 well text-center">
             <h2>Vous</h2>
             <video controls id="emitter-video" width="100%" height="200px"></video>
-            <div id="shareDiv"><oda-loading/></div>
         </div>
         <div class="col-md-3"></div>
     </div>
-    <div class="row" id="receivers">    
+    <div class="row well" id="presents">    
+    </div>
+    <div class="row well text-center" id="receivers">    
     </div>
 
-    <div class="row">
+    <div class="row well">
         <div class="col-md-12">
-            <div class="panel-body msg_container_base" id="chat">
-                <kureha-chat-notificaiton message="New user: moi" userCode="SYSTEM"/>
-                <kureha-chat-sent message="hello" userCode="FRO"/>
-                <kureha-chat-receive message="hello form me" userCode="FRO"/>
+            <div class="panel-body msg_container_base" id="chat" height="200px">
             </div>
         </div>
         <div class="col-md-12">
-            <oda-input-area
-                oda-input-area-name="message"
-                oda-input-area-label="chat.message"
-                oda-input-area-tips="chat.tips"
-                oda-input-area-advice="chat.advice"
-                oda-input-area-placeholder="chat.placeholder"
-                oda-input-area-check="Oda.Regexs:noInjection" 
-                oda-input-area-paste="false" 
-                oda-input-area-debounce="100"
+            <oda-input-text
+                oda-input-text-name="message"
+                oda-input-text-type="text"
+                oda-input-text-label="chat.message"
+                oda-input-text-tips="chat.tips"
+                oda-input-text-advice="chat.advice"
+                oda-input-text-placeholder="chat.placeholder"
+                oda-input-text-check="Oda.Regexs:noInjection" 
+                oda-input-text-paste="false" 
+                oda-input-text-debounce="50"
                 required/>
-            <oda-btn oda-btn-name="submit" oda-btn-style="primary" oda-btn-icon-before="ok" oda-btn-click="$.Oda.App.Controller.Home.sent();" disabled>oda-main.bt-submit</oda-btn>
+            <oda-btn oda-btn-name="submit" oda-btn-enter="1" oda-btn-style="primary" oda-btn-icon-before="ok" oda-btn-click="$.Oda.App.Controller.Home.sent();" disabled>oda-main.bt-submit</oda-btn>
         </div>
     </div>
 </div>
-
-<script id="tpl-receiver" type="text/template">
-    <div class="col-md-3 well text-center">            
-        <h2>{{userCode}}</h2>
-        <video controls id="receiver-video-{{id}}" width="100%" height="150px"></video>
-    </div>
-</script>
 
 <script>
     $.Oda.App.Controller.Home.start();

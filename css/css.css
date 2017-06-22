@@ -1,8 +1,8 @@
 .msg_container_base{
-  background: #e5e5e5;
+  background: #f5f5f5;
   margin: 0;
   padding: 0 10px 10px;
-  max-height:300px;
+  height:300px;
   overflow-x:hidden;
 }
 .msg_receive{
@@ -21,7 +21,7 @@
   max-width:100%;
 }
 .notif > p {
-    font-size: 13px;
+    font-size: 12px;
     margin: 0 0 0.2rem 0;
 }
 .notif > time {
@@ -36,7 +36,7 @@
   max-width:100%;
 }
 .messages > p {
-    font-size: 13px;
+    font-size: 12px;
     margin: 0 0 0.2rem 0;
 }
 .messages > time {
@@ -58,7 +58,7 @@
 .img-responsive {
     display: inline;
     max-width: 100%;
-    max-height: 100px;
+    max-height: 60px;
     height: auto;
 }
 .avatar {
@@ -90,4 +90,8 @@
     border-right-color: transparent;
     border-top-color: transparent;
     box-shadow: 1px 1px 2px rgba(black, 0.2);
+}
+
+.well{
+    padding: 10px
 }
