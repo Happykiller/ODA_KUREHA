@@ -56,6 +56,12 @@
          */
         startApp: function() {
             try {
+                navigator.getUserMedia = ( navigator.getUserMedia ||
+                    navigator.webkitGetUserMedia ||
+                    navigator.mozGetUserMedia ||
+                    navigator.msGetUserMedia)
+                ;
+
                 $.Oda.Display.Polyfill.createHtmlElement({
                     name: "kureha-chat-notificaiton",
                     createdCallback: function(){
@@ -137,7 +143,7 @@
                 peerInitiator: null,
                 peerReceiver: null,
                 receiverId: 0,
-                presents:[],
+                presents:{},
                 stream: null,
                 caller: null,
                 /**
@@ -145,12 +151,6 @@
                  */
                 start: function() {
                     try {
-                        navigator.getUserMedia = ( navigator.getUserMedia ||
-                            navigator.webkitGetUserMedia ||
-                            navigator.mozGetUserMedia ||
-                            navigator.msGetUserMedia)
-                        ;
-
                         $.Oda.App.Websocket = $.Oda.Websocket.connect($.Oda.Context.Websocket);
 
                         $.Oda.App.Websocket.onConnect = function(e) { 
@@ -165,15 +165,20 @@
                         $.Oda.App.Websocket.onMessage = function(e) { 
                             $.Oda.Log.debug("New message => type:" + e.data.messageType + ", from:" + e.data.userCode);
                             switch(e.data.messageType) {
+                                //NEW_CONNECTION
                                 case $.Oda.App.WebsocketMessageType.NEW_CONNECTION:
                                     $.Oda.App.Controller.Home.addPresent({userCode: e.data.userCode});
                                     break;
+                                //CLOSE_CONNECTION
                                 case $.Oda.App.WebsocketMessageType.CLOSE_CONNECTION:
                                     $.Oda.App.Controller.Home.presentRemove({userCode: e.data.userCode});
                                     break;
+                                //NEW_MESSAGE
                                 case $.Oda.App.WebsocketMessageType.NEW_MESSAGE:
                                     $("#chat").append('<kureha-chat-receive message="'+e.data.message+'" userCode="'+e.data.userCode+'"></kureha-chat-receive>');
+                                    $("#chat").scrollTop($("#chat")[0].scrollHeight);
                                     break;
+                                //PING_CALL
                                 case $.Oda.App.WebsocketMessageType.PING_CALL:
                                     $.Oda.App.Websocket.send({
                                         messageType: $.Oda.App.WebsocketMessageType.PING_ANSWER,
@@ -183,37 +188,29 @@
                                         userFromId: e.data.userId
                                     });
                                     break;
+                                //PING_ANSWER
                                 case $.Oda.App.WebsocketMessageType.PING_ANSWER:
                                     if(e.data.userFromCode === $.Oda.Session.code_user){
                                         $.Oda.App.Controller.Home.addPresent({userCode: e.data.userCode});
                                     }
                                     break;
+                                //WEBRTC_OFFER
                                 case $.Oda.App.WebsocketMessageType.WEBRTC_OFFER:
                                     if(e.data.userTargetCode === $.Oda.Session.code_user){
-                                        $.Oda.App.Controller.Home.caller = e.data.userCode;
-                                        $.Oda.App.Controller.Home.peerReceiver.signal(e.data.offer);
-                                        $('#dialBt-'+e.data.userCode).html('<oda-btn oda-btn-name="end-'+$.Oda.App.Controller.Home.caller+'" oda-btn-style="primary" oda-btn-icon-before="earphone" oda-btn-click="$.Oda.App.Controller.Home.endCall({userCode:\''+$.Oda.App.Controller.Home.caller+'\'});">Racrocher</oda-btn>');
-                                        $.Oda.App.Controller.Home.receiverId++;
-                                        var strHtmlReceiver = $.Oda.Display.TemplateHtml.create({
-                                            template: "tpl-receiver",
-                                            scope: {
-                                                id: $.Oda.App.Controller.Home.receiverId,
-                                                userCode: e.data.userCode
-                                            }
+                                        $.Oda.App.Controller.Home.createPeer({
+                                            initiator: false,
+                                            userCode: e.data.userCode
                                         });
-                                        $('#receivers').append(strHtmlReceiver);
-                                        $.Oda.App.Controller.Home.createReceiver();
+                                        $.Oda.App.Controller.Home.presents[e.data.userCode].peer.signal(e.data.offer);
                                     }
                                     break;
+                                //WEBRTC_ANSWER
                                 case $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER:
                                     if(e.data.userTargetCode === $.Oda.Session.code_user){
-                                        $.Oda.App.Controller.Home.peerInitiator.signal(e.data.answer);
+                                        $.Oda.App.Controller.Home.presents[e.data.userCode].peer.signal(e.data.answer);
                                     }
                                     break;
-                                default:
-                                    ;
                             }
-                            $("#chat").scrollTop($("#chat")[0].scrollHeight);
                         };
 
                         $.Oda.Scope.Gardian.add({
@@ -228,7 +225,7 @@
                             }
                         });
 
-                        $.Oda.App.Controller.Home.startPeerReceiver();
+                        $.Oda.App.Controller.Home.startVideo();
 
                         return this;
                     } catch (er) {
@@ -260,110 +257,6 @@
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
-                addPresent: function(p) {
-                    try {
-                        $.Oda.App.Controller.Home.presents.push(p.userCode)
-                        var urlAvatar = $.Oda.Context.rest+'vendor/happykiller/oda/resources/api/avatar/'+p.userCode+'?mili'+$.Oda.Tooling.getMilise();
-                        var strHtml = $.Oda.Display.TemplateHtml.create({
-                            template: "tpl-present",
-                            scope: {
-                                userCode: p.userCode,
-                                urlAvatar: urlAvatar
-                            }
-                        });
-                        $('#presents').append(strHtml);
-                        $("#chat").append('<kureha-chat-notificaiton message="New user: '+p.userCode+'" userCode="'+p.userCode+'"></kureha-chat-notificaiton>');
-                        return this;
-                    } catch (er) {
-                        $.Oda.Log.error("$.Oda.App.Controller.Home.addPresent: " + er.message);
-                        return null;
-                    }
-                },
-                /**
-                 * @returns {$.Oda.App.Controller.Home}
-                 */
-                presentRemove: function(p) {
-                    try {
-                        for(var index in $.Oda.App.Controller.Home.presents){
-                            var elt = $.Oda.App.Controller.Home.presents[index];
-                            if(elt === p.userCode){
-                                $.Oda.App.Controller.Home.presents.splice(index, 1);
-                            }
-                        }
-                        $('#present-'+p.userCode).remove();
-                        $('#receiver-'+p.userCode).remove();
-                        $("#chat").append('<kureha-chat-notificaiton message="User left: '+p.userCode+'" userCode="'+p.userCode+'"></kureha-chat-notificaiton>');
-                        return this;
-                    } catch (er) {
-                        $.Oda.Log.error("$.Oda.App.Controller.Home.presentRemove: " + er.message);
-                        return null;
-                    }
-                },
-                /**
-                 * @returns {$.Oda.App.Controller.Home}
-                 */
-                startPeerReceiver: function() {
-                    try {
-                        navigator.getUserMedia({
-                            video: true,
-                            audio: { facingMode: "user" }
-                        }, function(stream){
-                            $.Oda.App.Controller.Home.stream = stream;
-                            var video = document.querySelector('#emitter-video');
-                            video.srcObject = $.Oda.App.Controller.Home.stream;
-                            video.volume = 0;
-                            video.play();
-                            
-                            $.Oda.App.Controller.Home.createReceiver();
-                        }, function(){});
-                        return this;
-                    } catch (er) {
-                        $.Oda.Log.error("$.Oda.App.Controller.Home.startPeerReceiver: " + er.message);
-                        return null;
-                    }
-                },
-                /**
-                 * @returns {$.Oda.App.Controller.Home}
-                 */
-                call: function(p) {
-                    try {
-                        $.Oda.App.Controller.Home.peerInitiator = new SimplePeer({
-                            initiator: true,
-                            stream: $.Oda.App.Controller.Home.stream,
-                            trickle: false,
-                            config: { iceServers: [ { urls: 'stun:stun.l.google.com:19302' } ] },
-                        })
-                        $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peerInitiator);
-                        $('#dialBt-'+p.userCode).html('<oda-btn oda-btn-name="end-'+p.userCode+'" oda-btn-style="primary" oda-btn-icon-before="earphone" oda-btn-click="$.Oda.App.Controller.Home.endCall({userCode:\''+p.userCode+'\'});">Racrocher</oda-btn>');
-                        $.Oda.App.Controller.Home.receiverId++;
-                        var strHtmlReceiver = $.Oda.Display.TemplateHtml.create({
-                            template: "tpl-receiver",
-                            scope: {
-                                id: $.Oda.App.Controller.Home.receiverId,
-                                userCode: p.userCode
-                            }
-                        });
-                        $('#receivers').append(strHtmlReceiver);
-                        $.Oda.App.Controller.Home.peerInitiator.on('signal', function(data){
-                            if(data.type === "offer"){
-                                $.Oda.App.Websocket.send({
-                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_OFFER,
-                                    userCode: $.Oda.Session.code_user,
-                                    userId: $.Oda.Session.id,
-                                    userTargetCode: p.userCode,
-                                    offer: data
-                                });
-                            }
-                        });
-                        return this;
-                    } catch (er) {
-                        $.Oda.Log.error("$.Oda.App.Controller.Home.call: " + er.message);
-                        return null;
-                    }
-                },
-                /**
-                 * @returns {$.Oda.App.Controller.Home}
-                 */
                 pingAll: function() {
                     try {
                         $.Oda.App.Websocket.send({
@@ -380,21 +273,185 @@
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
+                addPresent: function(p) {
+                    try {
+                        if(!$.Oda.App.Controller.Home.presentCheck({userCode: p.userCode})){
+                            $.Oda.App.Controller.Home.presents[p.userCode] = {
+                                userCode: p.userCode,
+                                peer: null
+                            }
+                        }
+                        var urlAvatar = $.Oda.Context.rest+'vendor/happykiller/oda/resources/api/avatar/'+p.userCode+'?mili'+$.Oda.Tooling.getMilise();
+                        var strHtml = $.Oda.Display.TemplateHtml.create({
+                            template: "tpl-present",
+                            scope: {
+                                userCode: p.userCode,
+                                urlAvatar: urlAvatar
+                            }
+                        });
+                        $('#presents').append(strHtml);
+                        $("#chat").append('<kureha-chat-notificaiton message="New user: '+p.userCode+'" userCode="'+p.userCode+'"></kureha-chat-notificaiton>');
+                        $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.addPresent: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                presentRemove: function(p) {
+                    try {
+                        $.Oda.App.Controller.Home.endCall({userCode : p.userCode});
+                        delete $.Oda.App.Controller.Home.presents[p.userCode];
+                        $('#present-'+p.userCode).remove();
+                        $("#chat").append('<kureha-chat-notificaiton message="User left: '+p.userCode+'" userCode="'+p.userCode+'"></kureha-chat-notificaiton>');
+                        $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.presentRemove: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * 
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                presentCheck: function(p) {
+                    try {
+                        for(var key in $.Oda.App.Controller.Home.presents){
+                            if(p.userCode === key){
+                                return true;
+                            }
+                        }
+                        return false;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.presentCheck: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                startVideo: function() {
+                    try {
+                        navigator.getUserMedia({
+                            video: true,
+                            audio: { facingMode: "user" }
+                        }, function(stream){
+                            $.Oda.App.Controller.Home.stream = stream;
+                            var video = document.querySelector('#emitter-video');
+                            video.srcObject = $.Oda.App.Controller.Home.stream;
+                            video.volume = 0;
+                            video.play();
+                        }, function(){});
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.startPeerReceiver: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                call: function(p) {
+                    try {
+                        $.Oda.App.Controller.Home.createPeer({
+                            initiator: true,
+                            userCode: p.userCode
+                        });
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.call: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                endCall: function(p) {
+                    try {
+                        if($.Oda.App.Controller.Home.presents[p.userCode].peer && ($.Oda.App.Controller.Home.presents[p.userCode].peer.destroy()));
+                        $('#receiver-'+p.userCode).remove();
+                        $('#dialBt-' + p.userCode).html('<oda-btn oda-btn-name="start-' + p.userCode + '" oda-btn-style="primary" oda-btn-icon-before="earphone" oda-btn-click="$.Oda.App.Controller.Home.call({userCode:\'' + p.userCode + '\'});">Appeler</oda-btn>');
+                        return null;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.endCall: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                createPeer: function(p) {
+                    try {
+                        $('#dialBt-' + p.userCode).html('<oda-btn oda-btn-name="end-' + p.userCode + '" oda-btn-style="primary" oda-btn-icon-before="earphone" oda-btn-click="$.Oda.App.Controller.Home.endCall({userCode:\'' + p.userCode + '\'});">Racrocher</oda-btn>');
+                        var strHtmlReceiver = $.Oda.Display.TemplateHtml.create({
+                            template: "tpl-receiver",
+                            scope: {
+                                userCode: p.userCode
+                            }
+                        });
+                        $('#receivers').append(strHtmlReceiver);
+                        $.Oda.App.Controller.Home.presents[p.userCode].peer = new SimplePeer({
+                            initiator: p.initiator,
+                            stream: $.Oda.App.Controller.Home.stream,
+                            config: { iceServers: [ { urls: 'stun:stun.l.google.com:19302' } ] },
+                            trickle: false
+                        });
+                        $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.presents[p.userCode].peer);
+                        $.Oda.App.Controller.Home.presents[p.userCode].peer.on('signal', function(data){
+                            if(data.type === "answer"){
+                                var userCaller = $.Oda.App.Controller.Home.searchPresentByChannelName({channelName: this.channelName});
+                                $.Oda.App.Websocket.send({
+                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER,
+                                    userCode: $.Oda.Session.code_user,
+                                    userId: $.Oda.Session.id,
+                                    userTargetCode: userCaller.userCode,
+                                    answer: data
+                                });
+                            }else if(data.type === "offer"){
+                                var userTargetCode = $.Oda.App.Controller.Home.searchPresentByChannelName({channelName: this.channelName});
+                                $.Oda.App.Websocket.send({
+                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_OFFER,
+                                    userCode: $.Oda.Session.code_user,
+                                    userId: $.Oda.Session.id,
+                                    userTargetCode: userTargetCode.userCode,
+                                    offer: data
+                                });
+                            }
+                        });
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.createPeer: " + er.message);
+                        return null;
+                    }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
                 bindEvents: function (p) {
                     try {
                         p.on('error', function(data){
                             console.log('error peer', data);
                         });
+
+                        p.on('close', function(){
+                            var user = $.Oda.App.Controller.Home.searchPresentByChannelName({channelName: p.channelName});
+                            $.Oda.App.Controller.Home.endCall({userCode: user.userCode});
+                        });
                         
                         p.on('stream', function(stream){
+                            var user = $.Oda.App.Controller.Home.searchPresentByChannelName({channelName: p.channelName});
                             var strHtmlReceiver = $.Oda.Display.TemplateHtml.create({
                                 template: "tpl-receiver-video",
                                 scope: {
-                                    id: $.Oda.App.Controller.Home.receiverId
+                                    userCode: user.userCode
                                 }
                             });
-                             $("#div-receiver-video-"+$.Oda.App.Controller.Home.receiverId).html(strHtmlReceiver);
-                            var video = document.querySelector('#receiver-video-'+$.Oda.App.Controller.Home.receiverId);
+                             $("#div-receiver-video-" + user.userCode).html(strHtmlReceiver);
+                            var video = document.querySelector('#receiver-video-' + user.userCode);
                             video.srcObject = stream;
                             video.volume = 0;
                             video.play();
@@ -409,32 +466,20 @@
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
-                createReceiver: function() {
+                searchPresentByChannelName: function(p) {
                     try {
-                        $.Oda.App.Controller.Home.peerReceiver = new SimplePeer({
-                            initiator: false,
-                            stream: $.Oda.App.Controller.Home.stream,
-                            trickle: true,
-                            config: { iceServers: [ { urls: 'stun:stun.l.google.com:19302' } ] },
-                        })
-                        $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peerReceiver);
-                        $.Oda.App.Controller.Home.peerReceiver.on('signal', function(data){
-                            if(data.type === "answer"){
-                                $.Oda.App.Websocket.send({
-                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER,
-                                    userCode: $.Oda.Session.code_user,
-                                    userId: $.Oda.Session.id,
-                                    userTargetCode: $.Oda.App.Controller.Home.caller,
-                                    answer: data
-                                });
+                        for(var key in $.Oda.App.Controller.Home.presents){
+                            var present = $.Oda.App.Controller.Home.presents[key];
+                            if(present.peer && (present.peer.channelName === p.channelName)){
+                                return present;
                             }
-                        });
-                        return this;
+                        }
+                        return null;
                     } catch (er) {
-                        $.Oda.Log.error("$.Oda.App.Controller.Home.createReceiver: " + er.message);
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.searchPresentByChannelName: " + er.message);
                         return null;
                     }
-                },
+                }
             }
         }
     };
