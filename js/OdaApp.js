@@ -23,7 +23,7 @@
         $.Oda.Event.addListener({name : "oda-fully-loaded", callback : function(e){
             var listDepends = [
                 {name: "depends" , ordered: false, "list" : [
-                    { elt: $.Oda.Context.host + "/templates/templates.html", type: "html", target: function(data){
+                    { elt: $.Oda.Context.host + "templates/templates.html", type: "html", target: function(data){
                         $("body").append(data);
                     }}
                 ]}
@@ -139,6 +139,7 @@
                 receiverId: 0,
                 presents:[],
                 stream: null,
+                caller: null,
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
@@ -188,20 +189,26 @@
                                     }
                                     break;
                                 case $.Oda.App.WebsocketMessageType.WEBRTC_OFFER:
-                                    $.Oda.App.Controller.Home.peerReceiver.signal(e.data.offer);
-                                    $('#dialBt-'+e.data.userCode).html('');
-                                    $.Oda.App.Controller.Home.receiverId++;
-                                    var strHtmlReceiver = $.Oda.Display.TemplateHtml.create({
-                                        template: "tpl-receiver",
-                                        scope: {
-                                            id: $.Oda.App.Controller.Home.receiverId,
-                                            userCode: e.data.userCode
-                                        }
-                                    });
-                                    $('#receivers').append(strHtmlReceiver);
+                                    if(e.data.userTargetCode === $.Oda.Session.code_user){
+                                        $.Oda.App.Controller.Home.caller = e.data.userCode;
+                                        $.Oda.App.Controller.Home.peerReceiver.signal(e.data.offer);
+                                        $('#dialBt-'+e.data.userCode).html('<oda-btn oda-btn-name="end-'+$.Oda.App.Controller.Home.caller+'" oda-btn-style="primary" oda-btn-icon-before="earphone" oda-btn-click="$.Oda.App.Controller.Home.endCall({userCode:\''+$.Oda.App.Controller.Home.caller+'\'});">Racrocher</oda-btn>');
+                                        $.Oda.App.Controller.Home.receiverId++;
+                                        var strHtmlReceiver = $.Oda.Display.TemplateHtml.create({
+                                            template: "tpl-receiver",
+                                            scope: {
+                                                id: $.Oda.App.Controller.Home.receiverId,
+                                                userCode: e.data.userCode
+                                            }
+                                        });
+                                        $('#receivers').append(strHtmlReceiver);
+                                        $.Oda.App.Controller.Home.createReceiver();
+                                    }
                                     break;
                                 case $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER:
-                                    $.Oda.App.Controller.Home.peerInitiator.signal(e.data.answer);
+                                    if(e.data.userTargetCode === $.Oda.Session.code_user){
+                                        $.Oda.App.Controller.Home.peerInitiator.signal(e.data.answer);
+                                    }
                                     break;
                                 default:
                                     ;
@@ -307,22 +314,7 @@
                             video.volume = 0;
                             video.play();
                             
-                            $.Oda.App.Controller.Home.peerReceiver = new SimplePeer({
-                                initiator: false,
-                                stream: $.Oda.App.Controller.Home.stream,
-                                trickle: true
-                            })
-                            $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peerReceiver);
-                            $.Oda.App.Controller.Home.peerReceiver.on('signal', function(data){
-                                if(data.type === "answer"){
-                                    $.Oda.App.Websocket.send({
-                                        messageType: $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER,
-                                        userCode: $.Oda.Session.code_user,
-                                        userId: $.Oda.Session.id,
-                                        answer: data
-                                    });
-                                }
-                            });
+                            $.Oda.App.Controller.Home.createReceiver();
                         }, function(){});
                         return this;
                     } catch (er) {
@@ -338,10 +330,11 @@
                         $.Oda.App.Controller.Home.peerInitiator = new SimplePeer({
                             initiator: true,
                             stream: $.Oda.App.Controller.Home.stream,
-                            trickle: false
+                            trickle: false,
+                            config: { iceServers: [ { urls: 'stun:stun.l.google.com:19302' } ] },
                         })
                         $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peerInitiator);
-                        $('#dialBt-'+p.userCode).html('');
+                        $('#dialBt-'+p.userCode).html('<oda-btn oda-btn-name="end-'+p.userCode+'" oda-btn-style="primary" oda-btn-icon-before="earphone" oda-btn-click="$.Oda.App.Controller.Home.endCall({userCode:\''+p.userCode+'\'});">Racrocher</oda-btn>');
                         $.Oda.App.Controller.Home.receiverId++;
                         var strHtmlReceiver = $.Oda.Display.TemplateHtml.create({
                             template: "tpl-receiver",
@@ -412,7 +405,36 @@
                         $.Oda.Log.error("$.Oda.App.Controller.Home.bindEvents: " + er.message);
                         return null;
                     }
-                }
+                },
+                /**
+                 * @returns {$.Oda.App.Controller.Home}
+                 */
+                createReceiver: function() {
+                    try {
+                        $.Oda.App.Controller.Home.peerReceiver = new SimplePeer({
+                            initiator: false,
+                            stream: $.Oda.App.Controller.Home.stream,
+                            trickle: true,
+                            config: { iceServers: [ { urls: 'stun:stun.l.google.com:19302' } ] },
+                        })
+                        $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.peerReceiver);
+                        $.Oda.App.Controller.Home.peerReceiver.on('signal', function(data){
+                            if(data.type === "answer"){
+                                $.Oda.App.Websocket.send({
+                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER,
+                                    userCode: $.Oda.Session.code_user,
+                                    userId: $.Oda.Session.id,
+                                    userTargetCode: $.Oda.App.Controller.Home.caller,
+                                    answer: data
+                                });
+                            }
+                        });
+                        return this;
+                    } catch (er) {
+                        $.Oda.Log.error("$.Oda.App.Controller.Home.createReceiver: " + er.message);
+                        return null;
+                    }
+                },
             }
         }
     };
