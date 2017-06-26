@@ -140,12 +140,8 @@
 
         Controller: {
             Home: {
-                peerInitiator: null,
-                peerReceiver: null,
-                receiverId: 0,
                 presents:{},
                 stream: null,
-                caller: null,
                 /**
                  * @returns {$.Oda.App.Controller.Home}
                  */
@@ -397,31 +393,10 @@
                         $.Oda.App.Controller.Home.presents[p.userCode].peer = new SimplePeer({
                             initiator: p.initiator,
                             stream: $.Oda.App.Controller.Home.stream,
-                            config: { iceServers: [ { urls: 'stun:stun.l.google.com:19302' } ] },
+                            config: $.Oda.Context.PeerConfig,
                             trickle: false
                         });
                         $.Oda.App.Controller.Home.bindEvents($.Oda.App.Controller.Home.presents[p.userCode].peer);
-                        $.Oda.App.Controller.Home.presents[p.userCode].peer.on('signal', function(data){
-                            if(data.type === "answer"){
-                                var userCaller = $.Oda.App.Controller.Home.searchPresentByChannelName({channelName: this.channelName});
-                                $.Oda.App.Websocket.send({
-                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER,
-                                    userCode: $.Oda.Session.code_user,
-                                    userId: $.Oda.Session.id,
-                                    userTargetCode: userCaller.userCode,
-                                    answer: data
-                                });
-                            }else if(data.type === "offer"){
-                                var userTargetCode = $.Oda.App.Controller.Home.searchPresentByChannelName({channelName: this.channelName});
-                                $.Oda.App.Websocket.send({
-                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_OFFER,
-                                    userCode: $.Oda.Session.code_user,
-                                    userId: $.Oda.Session.id,
-                                    userTargetCode: userTargetCode.userCode,
-                                    offer: data
-                                });
-                            }
-                        });
                         return this;
                     } catch (er) {
                         $.Oda.Log.error("$.Oda.App.Controller.Home.createPeer: " + er.message);
@@ -435,6 +410,27 @@
                     try {
                         p.on('error', function(data){
                             console.log('error peer', data);
+                        });
+
+                        p.on('signal', function(data){
+                            var user = $.Oda.App.Controller.Home.searchPresentByChannelName({channelName: p.channelName});
+                            if(data.type === "answer"){
+                                $.Oda.App.Websocket.send({
+                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_ANSWER,
+                                    userCode: $.Oda.Session.code_user,
+                                    userId: $.Oda.Session.id,
+                                    userTargetCode: user.userCode,
+                                    answer: data
+                                });
+                            }else if(data.type === "offer"){
+                                $.Oda.App.Websocket.send({
+                                    messageType: $.Oda.App.WebsocketMessageType.WEBRTC_OFFER,
+                                    userCode: $.Oda.Session.code_user,
+                                    userId: $.Oda.Session.id,
+                                    userTargetCode: user.userCode,
+                                    offer: data
+                                });
+                            }
                         });
 
                         p.on('close', function(){
