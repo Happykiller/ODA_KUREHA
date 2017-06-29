@@ -39,7 +39,7 @@
     $.Oda.App = {
         /* Version number */
         version: VERSION,
-        Websocket:null,
+        Websocket: null,
         WebsocketMessageType:{
             NEW_CONNECTION: "NEW_CONNECTION",
             CLOSE_CONNECTION: "CLOSE_CONNECTION",
